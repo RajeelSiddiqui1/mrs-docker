@@ -16,6 +16,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-transparent backdrop-blur-md border border-white/30 text-white p-4 fixed top-0 left-0 w-full z-50">
+
       <div className="container mx-auto flex justify-between items-center">
         {/* Left - Logo */}
         <Link href="/" className="text-2xl font-bold transition-colors">

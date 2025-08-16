@@ -15,7 +15,7 @@ import {
   IconBrandFacebook,
 } from "@tabler/icons-react"
 
-function Register() {
+function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -83,7 +83,7 @@ function Register() {
         {/* Right Section - Form */}
         <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8">
           <div className="bg-white text-black shadow-lg rounded-lg w-full max-w-md p-6">
-            <h2 className="text-2xl font-bold mb-6">Register</h2>
+            <h2 className="text-2xl font-bold mb-6">Login</h2>
 
             <form onSubmit={handleSubmit}>
               <LabelInputContainer className="mb-4">
@@ -115,7 +115,7 @@ function Register() {
                 disabled={loading}
                 className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 transition"
               >
-                {loading ? "Signing up..." : "Sign Up"}
+                {loading ? "Logging..." : "Login"}
               </button>
 
               <div className="my-8 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-300 to-transparent dark:via-neutral-700" />
@@ -168,4 +168,4 @@ const LabelInputContainer = ({ children, className }) => {
   )
 }
 
-export default Register
+export default Login
