@@ -10,9 +10,14 @@ const fileSchema = Schema(
             required:true,
             type:String
         },
-        folder:{
+        folderId:{
             type:mongoose.Schema.Types.ObjectId,
             ref:"Folder"
+        },
+        userId:{
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"User",
+            required:true
         }
     },
     {
