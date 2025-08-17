@@ -15,8 +15,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-transparent backdrop-blur-md border border-white/30 text-white p-4  top-0 left-0 w-full z-50">
-
+    <nav className="bg-transparent backdrop-blur-md border border-white/30 text-white p-4 w-full z-50 fixed top-0 left-0">
       <div className="container mx-auto flex justify-between items-center">
         {/* Left - Logo */}
         <Link href="/" className="text-2xl font-bold transition-colors">
@@ -49,7 +48,7 @@ export default function Navbar() {
                 </span>
               </>
             ) : (
-              <span className="font-medium ">Menu</span>
+              <span className="font-medium">Menu</span>
             )}
 
             {/* Dropdown Icon */}
@@ -65,19 +64,23 @@ export default function Navbar() {
 
           {/* Dropdown Menu */}
           {isOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded-lg shadow-lg py-2 z-50">
+            <div
+              className="absolute right-0 mt-2 w-48 
+              bg-white/10 backdrop-blur-md text-white 
+              rounded-lg shadow-lg py-2 z-50 border border-white/20"
+            >
               {status === "authenticated" ? (
                 <>
                   <Link
                     href="/profile"
-                    className="block px-4 py-2 hover:bg-gray-100"
+                    className="block px-4 py-2 hover:bg-white/20 transition"
                     onClick={() => setIsOpen(false)}
                   >
                     Profile
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    className="block w-full text-left px-4 py-2 hover:bg-white/20 transition"
                   >
                     Logout
                   </button>
@@ -86,14 +89,14 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/login"
-                    className="block px-4 py-2 hover:bg-gray-100"
+                    className="block px-4 py-2 hover:bg-white/20 transition"
                     onClick={() => setIsOpen(false)}
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="block px-4 py-2 hover:bg-gray-100"
+                    className="block px-4 py-2 hover:bg-white/20 transition"
                     onClick={() => setIsOpen(false)}
                   >
                     Register

@@ -114,7 +114,7 @@ export default function FolderPage({ params }) {
     <>
       <Toaster position="top-right" theme="system" richColors />
       <Navbar />
-      <div className="min-h-screen w-full bg-gradient-to-b from-gray-900 to-black bg-grid-white/[0.03] relative flex flex-col items-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black antialiased bg-grid-white/[0.02] relative overflow-hidden">
         <Spotlight
           className="-top-40 left-0 md:left-60 md:-top-20"
           fill="white"
