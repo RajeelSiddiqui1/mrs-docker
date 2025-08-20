@@ -87,20 +87,17 @@ export default function ProfilePage() {
         },
       });
 
-      toast.success("Profile updated successfully!", {
-        description: "Your information has been updated.",
-        action: {
-          label: "View Profile",
-          onClick: () => window.location.reload(),
-        },
+      toast.success("Your profile update seen, your profile is up to date, logging out.", {
+        description: "You will be redirected to the login page.",
       });
+
+      setTimeout(async () => {
+        await signOut({ redirect: false });
+        router.push("/login");
+      }, 3000);
     } catch (error) {
-     toast.success("Profile updated successfully!", {
-        description: "Your information has been updated.",
-        action: {
-          label: "View Profile",
-          onClick: () => window.location.reload(),
-        },
+      toast.error("Failed to update profile.", {
+        description: error.message || "An error occurred. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -126,11 +123,11 @@ export default function ProfilePage() {
   return (
     <>
       <Toaster position="top-right" richColors />
-      <Navbar/>
+      <Navbar />
       <div className="min-h-screen w-full flex items-center justify-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
         <Spotlight />
-        <div className="bg-white text-black shadow-lg rounded-lg w-full max-w-md p-6 relative z-10">
-          <h2 className="text-2xl font-bold mb-6 text-center">Edit Your Profile</h2>
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 text-white shadow-lg rounded-xl w-full max-w-md p-6 relative z-10">
+          <h2 className="text-2xl font-bold mb-6 text-center font-sans tracking-tight">Edit Your Profile</h2>
           <div className="flex justify-center mb-6">
             <div className="relative">
               <img
@@ -247,7 +244,7 @@ const LabelInputContainer = ({ children, className }) => (
 const Label = React.forwardRef(({ className, ...props }, ref) => (
   <label
     ref={ref}
-    className={cn("text-sm font-medium text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", className)}
+    className={cn("text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", className)}
     {...props}
   />
 ));
@@ -257,7 +254,7 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => (
   <input
     type={type}
     className={cn(
-      "flex h-10 w-full border-none bg-gray-100 text-black rounded-md px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm transition duration-400",
+      "flex h-10 w-full border-none bg-white/10 text-white rounded-md px-3 py-2 text-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm transition duration-400",
       className
     )}
     ref={ref}

@@ -71,13 +71,13 @@ export default function Navbar() {
             >
               {status === "authenticated" ? (
                 <>
-                  <Link
+                  {/* <Link
                     href="/profile"
                     className="block px-4 py-2 hover:bg-white/20 transition"
                     onClick={() => setIsOpen(false)}
                   >
                     Profile
-                  </Link>
+                  </Link> */}
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 hover:bg-white/20 transition"

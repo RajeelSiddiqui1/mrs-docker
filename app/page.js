@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from "@/components/Navbar";
@@ -6,11 +7,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
-import { IconFolder, IconSearch, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconFolder, IconSearch, IconPlus, IconTrash, IconAlertTriangle, IconX } from "@tabler/icons-react";
 import { Toaster } from "@/components/ui/sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,6 +24,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState(null); // New state for deletion
+  const [isDeleting, setIsDeleting] = useState(false); // New state for delete loading
 
   const router = useRouter();
 
@@ -71,27 +75,84 @@ export default function Home() {
     }
   };
 
-  const deleteFolder = async (folderId) => {
-    setLoading(true);
+  const handleDeleteFolder = async () => {
+    if (!folderToDelete) return;
+
+    setIsDeleting(true);
     try {
-      const { data } = await axios.delete(`/api/folder/${folderId}`);
+      const { data } = await axios.delete(`/api/folder/${folderToDelete._id}`);
       if (data?.ok) {
-        toast.success("Folder deleted successfully");
-        setFolders((prev) => prev.filter((folder) => folder._id !== folderId));
-        setFilteredFolders((prev) => prev.filter((folder) => folder._id !== folderId));
+        toast.success(`"${folderToDelete.name}" deleted successfully`);
+        setFolders((prev) => prev.filter((folder) => folder._id !== folderToDelete._id));
+        setFilteredFolders((prev) => prev.filter((folder) => folder._id !== folderToDelete._id));
       } else {
-        toast.error(data.error || "Failed to delete folder");
+        toast.error(data.error || `Failed to delete "${folderToDelete.name}"`);
       }
     } catch {
       toast.error("Something went wrong");
     } finally {
-      setLoading(false);
+      setFolderToDelete(null);
+      setIsDeleting(false);
     }
   };
 
+  const DeleteConfirmationModal = ({ folder, onConfirm, onCancel, isDeleting }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+  >
+    <motion.div
+      initial={{ scale: 0.9, y: -20 }}
+      animate={{ scale: 1, y: 0 }}
+      exit={{ scale: 0.9, y: -20 }}
+      className="relative bg-gray-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-xl shadow-red-500/10"
+    >
+      <div className="flex flex-col items-center text-center">
+        {/* Icon */}
+        <div className="bg-red-500/10 p-3 rounded-full mb-4">
+          <IconAlertTriangle className="w-8 h-8 text-red-500" />
+        </div>
+
+        {/* Title */}
+        <h3 className="text-xl font-bold text-white mb-2">Confirm Deletion</h3>
+
+        {/* Message */}
+        <p className="text-gray-400 mb-6">
+          Are you sure you want to delete{" "}
+          <strong className="text-white font-medium break-all">
+            "{folder.name}"
+          </strong>
+          ? This action cannot be undone.
+        </p>
+
+        {/* Buttons */}
+        <div className="flex justify-end gap-3 w-full">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="rounded-lg px-5 py-2"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            className="rounded-lg px-5 py-2"
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  </motion.div>
+);    
+
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="top-right" theme="dark" richColors />
       <Navbar />
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black antialiased bg-grid-white/[0.02] relative overflow-hidden">
         <Spotlight />
@@ -174,11 +235,12 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      title="Delete folder" // Short tooltip
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteFolder(folder._id);
+                        setFolderToDelete(folder);
                       }}
-                      disabled={loading}
+                      disabled={isDeleting}
                       className="text-red-400 hover:text-red-500 hover:bg-gray-700"
                     >
                       <IconTrash className="w-4 h-4" />
@@ -190,6 +252,15 @@ export default function Home() {
           )}
         </div>
       </div>
+      <AnimatePresence>
+        {folderToDelete && (
+          <DeleteConfirmationModal
+            folder={folderToDelete}
+            onConfirm={handleDeleteFolder}
+            onCancel={() => setFolderToDelete(null)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

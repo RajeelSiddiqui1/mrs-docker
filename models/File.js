@@ -10,6 +10,10 @@ const fileSchema = Schema(
             required:true,
             type:String
         },
+        publicId:{
+            type:String,
+            required:true
+        },
         folderId:{
             type:mongoose.Schema.Types.ObjectId,
             ref:"Folder"
@@ -27,4 +31,4 @@ const fileSchema = Schema(
 
 const File = models.Files || model("Files", fileSchema)
 
-export default File
+export default File;

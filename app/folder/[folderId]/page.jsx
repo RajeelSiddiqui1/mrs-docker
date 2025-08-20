@@ -1,10 +1,23 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { use } from "react";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
 import { Spotlight } from "@/components/ui/spotlight-new";
-import { IconDownload, IconSortDescending, IconSortAscending, IconSearch, IconFile, IconExternalLink, IconUpload, IconX } from "@tabler/icons-react";
+import {
+  IconDownload,
+  IconSortDescending,
+  IconSortAscending,
+  IconSearch,
+  IconFile,
+  IconPhoto,
+  IconVideo,
+  IconTrash,
+  IconUpload,
+  IconX,
+  IconAlertTriangle
+} from "@tabler/icons-react";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +26,11 @@ import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
+const isImage = (fileName) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileName);
+const isVideo = (fileName) => /\.(mp4|webm|ogg|mov)$/i.test(fileName);
+
 export default function FolderPage({ params }) {
-  const { folderId } = params;
+  const { folderId } = use(params);
   const [files, setFiles] = useState([]);
   const [sortOrder, setSortOrder] = useState("newest");
   const [loading, setLoading] = useState(false);
@@ -22,15 +38,20 @@ export default function FolderPage({ params }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [viewingFile, setViewingFile] = useState(null);
+  const [fileToDelete, setFileToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false); // New state for delete loading
   const fileInputRef = useRef(null);
 
   const fetchFiles = async () => {
+    setLoading(true);
     try {
       const res = await axios.get(`/api/file?folderId=${folderId}`);
       setFiles(res.data || []);
     } catch (err) {
-      console.error("Fetch error:", err);
-      toast.error("Failed to fetch files");
+      toast.error("Failed to fetch files.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,6 +62,11 @@ export default function FolderPage({ params }) {
   const handleFileUpload = async (file) => {
     if (!file) return;
 
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      toast.error("Only image and video files are accepted.");
+      return;
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -49,8 +75,7 @@ export default function FolderPage({ params }) {
 
     reader.onprogress = (e) => {
       if (e.lengthComputable) {
-        const progress = Math.round((e.loaded / e.total) * 100);
-        setUploadProgress(progress);
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
       }
     };
 
@@ -61,11 +86,10 @@ export default function FolderPage({ params }) {
           fileBase64: reader.result,
           folderId,
         });
-        toast.success(`${file.name} uploaded successfully`);
+        toast.success(`'${file.name}' uploaded successfully!`);
         fetchFiles();
       } catch (err) {
-        console.error("Upload error:", err);
-        toast.error("Failed to upload file");
+        toast.error(`Failed to upload '${file.name}'.`);
       } finally {
         setIsUploading(false);
         setUploadProgress(0);
@@ -75,27 +99,53 @@ export default function FolderPage({ params }) {
 
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileUpload(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files[0]);
+      e.dataTransfer.clearData();
+    }
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
   };
 
   const handleDownload = (url, filename) => {
+    toast.info(`Downloading '${filename}'`);
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', filename);
+    link.setAttribute('target', '_blank');
     document.body.appendChild(link);
     link.click();
     link.parentNode.removeChild(link);
+  };
+
+  const handleDeleteFile = async () => {
+    if (!fileToDelete) return;
+
+    setIsDeleting(true); // Set deleting state
+    const { _id, name } = fileToDelete;
+
+    try {
+      await axios.delete(`/api/file/${_id}`);
+      setFiles((prev) => prev.filter((file) => file._id !== _id));
+      toast.success(`'${name}' deleted.`);
+    } catch (error) {
+      toast.error(`Failed to delete '${name}'.`);
+    } finally {
+      setFileToDelete(null);
+      setIsDeleting(false); // Reset deleting state
+    }
   };
 
   const filteredFiles = files.filter((file) =>
@@ -103,29 +153,120 @@ export default function FolderPage({ params }) {
   );
 
   const sortedFiles = [...filteredFiles].sort((a, b) => {
-    if (sortOrder === "newest") {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    } else {
-      return new Date(a.createdAt) - new Date(b.createdAt);
-    }
+    const dateA = new Date(a.createdAt);
+    const dateB = new Date(b.createdAt);
+    return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
   });
+
+  const FilePreviewModal = ({ file, onClose }) => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: -20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: -20 }}
+        className="relative bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-w-4xl max-h-[90vh] w-full flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4 pb-2 border-b border-neutral-700">
+          <h3 className="text-white font-semibold truncate pr-4">{file.name}</h3>
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-neutral-400 hover:text-white hover:bg-neutral-700">
+            <IconX className="w-5 h-5" />
+          </Button>
+        </div>
+        <div className="flex-grow overflow-auto flex items-center justify-center">
+          {isImage(file.name) ? (
+            <img src={file.fileUrl} alt={file.name} className="max-w-full max-h-full object-contain rounded-md" />
+          ) : (
+            <video controls className="max-w-full max-h-full object-contain rounded-md">
+              <source src={file.fileUrl} type={file.type} />
+            </video>
+          )}
+        </div>
+        <div className="flex justify-end mt-4">
+          <Button
+            onClick={() => handleDownload(file.fileUrl, file.name)}
+            className="bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+          >
+            Download
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+const DeleteConfirmationModal = ({ file, onConfirm, onCancel, isDeleting }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+  >
+    <motion.div
+      initial={{ scale: 0.9, y: -20 }}
+      animate={{ scale: 1, y: 0 }}
+      exit={{ scale: 0.9, y: -20 }}
+      className="relative bg-neutral-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-xl shadow-red-500/10"
+    >
+      <div className="flex flex-col items-center text-center">
+        {/* Icon */}
+        <div className="bg-red-500/10 p-3 rounded-full mb-4">
+          <IconAlertTriangle className="w-8 h-8 text-red-500" />
+        </div>
+
+        {/* Title */}
+        <h3 className="text-xl font-bold text-white mb-2">Confirm Deletion</h3>
+
+        {/* Message */}
+        <p className="text-neutral-400 mb-6">
+          Are you sure you want to delete{" "}
+          <strong className="text-white font-medium break-all">
+            "{file.name}"
+          </strong>
+          ? This action cannot be undone.
+        </p>
+
+        {/* Buttons */}
+        <div className="flex justify-end gap-3 w-full">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="rounded-lg px-5 py-2"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            className="rounded-lg px-5 py-2"
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  </motion.div>
+);
 
   return (
     <>
-      <Toaster position="top-right" theme="system" richColors />
+      <Toaster position="top-right" theme="dark" richColors />
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black antialiased bg-grid-white/[0.02] relative overflow-hidden">
-        <Spotlight
-          className="-top-40 left-0 md:left-60 md:-top-20"
-          fill="white"
-        />
+      <div className="min-h-screen bg-black antialiased bg-grid-white/[0.02] relative overflow-hidden">
+        <Spotlight className="-top-40 left-0 md:left-60 md:-top-20" fill="cyan" />
         <div className="p-4 sm:p-6 max-w-7xl mx-auto pt-24 z-10 w-full">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
-            Files in: {decodeURIComponent(folderId)}
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-8 text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400" >
+            Folder: {decodeURIComponent(folderId)}
           </h1>
 
           <motion.div
-            className={`bg-neutral-900/70 border-2 ${isDragging ? 'border-cyan-500' : 'border-neutral-800'} rounded-xl p-6 backdrop-blur-md mb-6 transition-all duration-300`}
+            className={`bg-neutral-900/50 border-2 ${isDragging ? 'border-cyan-500 scale-105' : 'border-dashed border-neutral-700'} rounded-xl p-6 backdrop-blur-md mb-8 transition-all duration-300 transform-gpu`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -134,22 +275,25 @@ export default function FolderPage({ params }) {
             transition={{ duration: 0.5 }}
           >
             <div className="flex flex-col items-center justify-center text-center py-8">
-              <IconUpload className={`w-12 h-12 ${isDragging ? 'text-cyan-400' : 'text-neutral-400'} mb-4 transition-colors duration-300`} />
-              <p className="text-white text-lg mb-2">
-                {isDragging ? "Drop your file here" : "Drag & drop a file here or click to upload"}
+              <motion.div animate={{ scale: isDragging ? 1.2 : 1 }}>
+                <IconUpload className={`w-12 h-12 ${isDragging ? 'text-cyan-400' : 'text-neutral-400'} mb-4 transition-colors duration-300`} />
+              </motion.div>
+              <p className="text-white text-lg mb-2 font-semibold">
+                {isDragging ? "Drop your image or video to upload!" : "Drag & drop an image or video here"}
               </p>
-              <p className="text-neutral-400 text-sm mb-4">Supported formats: PDF, PNG, JPG, DOCX</p>
+              <p className="text-neutral-500 text-sm mb-4">or click to browse your files</p>
               <input
                 type="file"
                 ref={fileInputRef}
                 onChange={(e) => handleFileUpload(e.target.files[0])}
                 className="hidden"
                 disabled={isUploading}
+                accept="image/*,video/*"
               />
               <Button
                 onClick={() => fileInputRef.current.click()}
                 disabled={isUploading}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg"
+                className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-8 py-3 rounded-lg transition-all duration-300 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40"
               >
                 {isUploading ? "Uploading..." : "Select File"}
               </Button>
@@ -159,11 +303,11 @@ export default function FolderPage({ params }) {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="w-full mt-4"
+                    className="w-full max-w-md mt-6"
                   >
-                    <Progress value={uploadProgress} className="w-full h-2 bg-neutral-800" />
-                    <p className="text-sm text-neutral-400 mt-2">
-                      Uploading: {uploadProgress}%
+                    <Progress value={uploadProgress} className="w-full h-2 [&>div]:bg-cyan-400" />
+                    <p className="text-sm text-neutral-400 mt-2 font-mono">
+                      {uploadProgress}%
                     </p>
                   </motion.div>
                 )}
@@ -171,7 +315,7 @@ export default function FolderPage({ params }) {
             </div>
           </motion.div>
 
-          <div className="bg-neutral-900/70 border border-neutral-800 rounded-xl p-6 backdrop-blur-md">
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 sm:p-6 backdrop-blur-md">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
               <div className="relative w-full sm:w-auto">
                 <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 h-5 w-5" />
@@ -180,92 +324,117 @@ export default function FolderPage({ params }) {
                   placeholder="Search files..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full sm:w-[300px] bg-neutral-800/70 border-neutral-700 text-white focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 focus:ring-offset-black transition-all duration-300 rounded-lg"
+                  className="pl-10 w-full sm:w-[300px] bg-neutral-800 border-neutral-700 text-white focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 focus:ring-offset-black transition-all duration-300 rounded-lg"
                 />
               </div>
               <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-neutral-800/70 border-neutral-700 text-white focus:ring-2 focus:ring-cyan-500 rounded-lg">
+                <SelectTrigger className="w-full sm:w-[180px] bg-neutral-800 border-neutral-700 text-white focus:ring-2 focus:ring-cyan-500 rounded-lg">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent className="bg-neutral-900 text-white border-neutral-700">
                   <SelectItem value="newest">
-                    <div className="flex items-center space-x-2">
-                      <IconSortDescending className="w-4 h-4" />
-                      <span>Newest</span>
-                    </div>
+                    <div className="flex items-center gap-2"><IconSortDescending className="w-4 h-4" /><span>Newest</span></div>
                   </SelectItem>
                   <SelectItem value="oldest">
-                    <div className="flex items-center space-x-2">
-                      <IconSortAscending className="w-4 h-4" />
-                      <span>Oldest</span>
-                    </div>
+                    <div className="flex items-center gap-2"><IconSortAscending className="w-4 h-4" /><span>Oldest</span></div>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {sortedFiles.length === 0 ? (
+            {loading && files.length === 0 ? (
+              <div className="text-center py-12 text-neutral-500">Loading files...</div>
+            ) : sortedFiles.length === 0 ? (
               <motion.div
                 className="text-center py-12"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               >
-                <IconFile className="mx-auto w-16 h-16 text-neutral-600 mb-4" />
+                <IconFile className="mx-auto w-16 h-16 text-neutral-700 mb-4" />
                 <p className="text-neutral-400 text-lg">
-                  {searchTerm ? "No files match your search." : "This folder is empty."}
+                  {searchTerm ? "No files match your search." : "This folder is empty. Try uploading a file!"}
                 </p>
               </motion.div>
             ) : (
               <motion.div
                 className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               >
-                {sortedFiles.map((file) => (
-                  <motion.div
-                    key={file._id}
-                    className="group relative flex flex-col justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-300"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex flex-col items-start space-y-3 flex-grow">
-                      <IconFile className="w-10 h-10 text-cyan-400" />
-                      <span className="text-white text-sm font-medium break-all w-full">
-                        {file.name}
-                      </span>
-                      <span className="text-xs text-neutral-500">
-                        {new Date(file.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-start space-x-2 mt-4 pt-4 border-t border-neutral-800">
+                <AnimatePresence>
+                  {sortedFiles.map((file) => (
+                    <motion.div
+                      layout
+                      key={file._id}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                      className="group relative flex flex-col justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+                    >
                       <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-neutral-300 bg-neutral-800 border-neutral-700 hover:bg-neutral-700 hover:text-white"
-                        onClick={() => window.open(file.fileUrl, "_blank")}
+                        variant="ghost"
+                        size="icon"
+                        title="Delete file" // Short tooltip
+                        className="absolute top-2 right-2 h-8 w-8 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setFileToDelete(file)}
                       >
-                        <IconExternalLink className="w-4 h-4 mr-2" />
-                        Open
+                        <IconTrash className="w-5 h-5" />
                       </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                        onClick={() => handleDownload(file.fileUrl, file.name)}
-                      >
-                        <IconDownload className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="flex flex-col items-start space-y-3 flex-grow">
+                        {isImage(file.name) ? (
+                          <IconPhoto className="w-10 h-10 text-cyan-400" />
+                        ) : isVideo(file.name) ? (
+                          <IconVideo className="w-10 h-10 text-cyan-400" />
+                        ) : (
+                          <IconFile className="w-10 h-10 text-neutral-500" />
+                        )}
+                        <span className="text-white text-sm font-medium break-all w-full pr-8">
+                          {file.name}
+                        </span>
+                        <span className="text-xs text-neutral-500">
+                          {new Date(file.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-start space-x-2 mt-4 pt-4 border-t border-neutral-800">
+                        {(isImage(file.name) || isVideo(file.name)) ? (
+                          <>
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+                              onClick={() => setViewingFile(file)}
+                            >
+                              Open
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+                              onClick={() => handleDownload(file.fileUrl, file.name)}
+                            >
+                              Download
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+                            onClick={() => handleDownload(file.fileUrl, file.name)}
+                          >
+                            Download
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </motion.div>
             )}
           </div>
         </div>
       </div>
+      <AnimatePresence>
+        {viewingFile && <FilePreviewModal file={viewingFile} onClose={() => setViewingFile(null)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {fileToDelete && <DeleteConfirmationModal file={fileToDelete} onConfirm={handleDeleteFile} onCancel={() => setFileToDelete(null)} />}
+      </AnimatePresence>
     </>
   );
 }

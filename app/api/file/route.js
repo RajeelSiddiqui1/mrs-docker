@@ -61,6 +61,7 @@ export async function POST(request) {
         const file = await File.create({
             name,
             fileUrl: uploadRes.secure_url,
+            publicId: uploadRes.public_id,
             folderId,
             userId: userSessionId
         })
