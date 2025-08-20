@@ -60,28 +60,22 @@ function Login() {
   return (
     <>
       <Toaster position="top-right" />
-
-      <div className="h-[40rem] w-full rounded-md flex md:items-center md:justify-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
+      <div className="min-h-screen w-full flex flex-col md:flex-row bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
         <Spotlight />
-
-        {/* Left Section with Spotlight */}
-        <div className="w-full md:w-1/2 h-auto md:h-screen flex items-center justify-center relative">
-          <div className="p-4 max-w-7xl mx-auto relative z-10 w-full pt-10 md:pt-0">
-            <h1 className="text-3xl md:text-7xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
-             Mrs Docker
+        <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8">
+          <div className="max-w-7xl mx-auto relative z-10 w-full pt-10 md:pt-0 text-center">
+            <h1 className="text-3xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
+              Mrs Docker
             </h1>
-            <p className="mt-4 font-normal text-sm md:text-base text-neutral-300 max-w-lg text-center mx-auto">
+            <p className="mt-4 font-normal text-sm md:text-base text-neutral-300 max-w-lg mx-auto">
               Create folders, organize your files, and upload images & videos securely.
               Your personal cloud, powered by Mrs Docker 🚀
             </p>
           </div>
         </div>
-
-        {/* Right Section - Form */}
         <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8">
           <div className="bg-zinc-900 text-white shadow-lg rounded-lg w-full max-w-md p-6 border border-zinc-700">
             <h2 className="text-2xl font-bold mb-6 text-neutral-100">Login</h2>
-
             <form onSubmit={handleSubmit}>
               <LabelInputContainer className="mb-4">
                 <Label htmlFor="email" className="text-neutral-200">Email Address</Label>
@@ -95,7 +89,6 @@ function Login() {
                   className="bg-zinc-800 text-white border-zinc-600 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-500"
                 />
               </LabelInputContainer>
-
               <LabelInputContainer className="mb-4">
                 <Label htmlFor="password" className="text-neutral-200">Password</Label>
                 <Input
@@ -108,7 +101,6 @@ function Login() {
                   className="bg-zinc-800 text-white border-zinc-600 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-500"
                 />
               </LabelInputContainer>
-
               <button
                 type="submit"
                 disabled={loading}
@@ -116,12 +108,10 @@ function Login() {
               >
                 {loading ? "Logging..." : "Login"}
               </button>
-
-
             </form>
             <div className="text-center mt-3">
               <p className="text-sm text-neutral-400">
-                Do you don't have an account?{' '}
+                Don't have an account?{' '}
                 <Link
                   href="/register"
                   className="text-neutral-200 hover:text-neutral-100 underline transition"
@@ -132,7 +122,6 @@ function Login() {
             </div>
             <div className="my-8 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-700 to-transparent" />
           </div>
-
         </div>
       </div>
     </>

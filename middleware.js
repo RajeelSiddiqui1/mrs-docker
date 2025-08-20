@@ -5,9 +5,12 @@ export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
 
-
     if (req.nextauth.token && (pathname === "/login" || pathname === "/register")) {
       return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    if (!req.nextauth.token && pathname === "/") {
+      return NextResponse.redirect(new URL("/home", req.url));
     }
 
     return NextResponse.next();
@@ -16,19 +19,16 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
-
-        
         if (
           pathname.startsWith("/api/auth") ||
           pathname === "/login" ||
           pathname === "/register" ||
-          pathname === "/" ||
+          pathname === "/home" ||
+          pathname === "/" ||                  // ✅ allow unauthenticated access to "/"
           pathname.startsWith("/api/videos")
         ) {
           return true;
         }
-
-      
         return !!token;
       },
     },
