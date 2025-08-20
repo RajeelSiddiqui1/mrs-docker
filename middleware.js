@@ -24,7 +24,7 @@ export default withAuth(
           pathname === "/login" ||
           pathname === "/register" ||
           pathname === "/home" ||
-          pathname === "/" ||                  // ✅ allow unauthenticated access to "/"
+          pathname === "/" ||                 
           pathname.startsWith("/api/videos")
         ) {
           return true;
