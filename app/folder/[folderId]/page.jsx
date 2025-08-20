@@ -200,59 +200,59 @@ export default function FolderPage({ params }) {
     </motion.div>
   );
 
-const DeleteConfirmationModal = ({ file, onConfirm, onCancel, isDeleting }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-  >
+  const DeleteConfirmationModal = ({ file, onConfirm, onCancel, isDeleting }) => (
     <motion.div
-      initial={{ scale: 0.9, y: -20 }}
-      animate={{ scale: 1, y: 0 }}
-      exit={{ scale: 0.9, y: -20 }}
-      className="relative bg-neutral-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-xl shadow-red-500/10"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
     >
-      <div className="flex flex-col items-center text-center">
-        {/* Icon */}
-        <div className="bg-red-500/10 p-3 rounded-full mb-4">
-          <IconAlertTriangle className="w-8 h-8 text-red-500" />
+      <motion.div
+        initial={{ scale: 0.9, y: -20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: -20 }}
+        className="relative bg-neutral-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-xl shadow-red-500/10"
+      >
+        <div className="flex flex-col items-center text-center">
+          {/* Icon */}
+          <div className="bg-red-500/10 p-3 rounded-full mb-4">
+            <IconAlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
+
+          {/* Title */}
+          <h3 className="text-xl font-bold text-white mb-2">Confirm Deletion</h3>
+
+          {/* Message */}
+          <p className="text-neutral-400 mb-6">
+            Are you sure you want to delete{" "}
+            <strong className="text-white font-medium break-all">
+              "{file.name}"
+            </strong>
+            ? This action cannot be undone.
+          </p>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 w-full">
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="rounded-lg px-5 py-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={onConfirm}
+              className="rounded-lg px-5 py-2"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
         </div>
-
-        {/* Title */}
-        <h3 className="text-xl font-bold text-white mb-2">Confirm Deletion</h3>
-
-        {/* Message */}
-        <p className="text-neutral-400 mb-6">
-          Are you sure you want to delete{" "}
-          <strong className="text-white font-medium break-all">
-            "{file.name}"
-          </strong>
-          ? This action cannot be undone.
-        </p>
-
-        {/* Buttons */}
-        <div className="flex justify-end gap-3 w-full">
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            className="rounded-lg px-5 py-2"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirm}
-            className="rounded-lg px-5 py-2"
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Deleting..." : "Delete"}
-          </Button>
-        </div>
-      </div>
+      </motion.div>
     </motion.div>
-  </motion.div>
-);
+  );
 
   return (
     <>
@@ -281,7 +281,13 @@ const DeleteConfirmationModal = ({ file, onConfirm, onCancel, isDeleting }) => (
               <p className="text-white text-lg mb-2 font-semibold">
                 {isDragging ? "Drop your image or video to upload!" : "Drag & drop an image or video here"}
               </p>
-              <p className="text-neutral-500 text-sm mb-4">or click to browse your files</p>
+              <p className="text-neutral-500 text-sm mb-2">
+                or click to browse your files
+              </p>
+              <p className="text-red-400 text-xs font-medium">
+                Max file size: 5 MB
+              </p>
+
               <input
                 type="file"
                 ref={fileInputRef}
