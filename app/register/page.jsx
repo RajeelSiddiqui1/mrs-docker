@@ -27,7 +27,6 @@ function Register() {
             const response = await axios.post('/api/auth/register', {
                 name,
                 email,
-                country,
                 password,
             })
 
@@ -134,18 +133,7 @@ function Register() {
                                     className="bg-zinc-800 text-white border-zinc-600 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-500"
                                 />
                             </LabelInputContainer>
-                            <LabelInputContainer className="mb-6">
-                                <Label htmlFor="country" className="text-neutral-200">Country</Label>
-                                <Input
-                                    id="country"
-                                    placeholder="Pakistan"
-                                    type="text"
-                                    value={country}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="bg-zinc-800 text-white border-zinc-600 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-500"
-                                />
-                            </LabelInputContainer>
+                            
                             <button
                                 type="submit"
                                 disabled={loading}

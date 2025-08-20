@@ -2,9 +2,9 @@ import { dbConnect } from "@/lib/db";
 import User from "@/models/User";
 
 export async function POST(request) {
-    const {name,email,country,password} = await request.json();
+    const {name,email,password} = await request.json();
 
-    if(!name || !email || !country || !password){
+    if(!name || !email  || !password){
        return Response.json({
         message:"Please fill all feilds"
        },{
@@ -25,7 +25,6 @@ export async function POST(request) {
        await User.create({
                 name,
                 email,
-                country,
                 password
             })
 
